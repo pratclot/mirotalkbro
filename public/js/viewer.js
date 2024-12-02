@@ -256,18 +256,60 @@ function toggleMessages() {
 
 video.addEventListener('click', toggleFullScreen);
 video.addEventListener('wheel', handleZoom);
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape' || event.code === 'Escape') {
+        console.log('Escape key pressed');
+        // Your custom logic here
+        video.style.transformOrigin = '';
+        video.style.transform = '';
+        zoom = 1;
+    }
+});
 
 function toggleFullScreen() {
     isFullScreen() ? goOutFullscreen(video) : goInFullscreen(video);
 }
 
+/**
+ * 1.1: This value is used when the `zoomDirection` is 'zoom-in'.
+ * It means that when the user scrolls the mouse wheel up (indicating a zoom-in action), the scale factor is set to 1.1.
+ * This means that the content will be scaled up to 110% of its original size with each scroll event, effectively making it larger.
+ */
+const ZOOM_IN_FACTOR = 1.1;
+/**
+ * 0.9: This value is used when the zoomDirection is 'zoom-out'.
+ * It means that when the user scrolls the mouse wheel down (indicating a zoom-out action), the scale factor is set to 0.9.
+ * This means that the content will be scaled down to 90% of its original size with each scroll event, effectively making it smaller.
+ */
+const ZOOM_OUT_FACTOR = 0.9;
+const MAX_ZOOM = 15;
+const MIN_ZOOM = 1;
+
+const rect = video.getBoundingClientRect();
 function handleZoom(e) {
     e.preventDefault();
-    if (!video.srcObject || !viewerSettings.options.zoom_video) return;
+    if (!video.srcObject || !broadcastSettings.options.zoom_video) return;
     const delta = e.wheelDelta ? e.wheelDelta : -e.deltaY;
     delta > 0 ? (zoom *= 1.2) : (zoom /= 1.2);
-    if (zoom < 1) zoom = 1;
-    video.style.scale = zoom;
+    // if (zoom < 1) zoom = 1;
+    // video.style.scale = zoom;
+
+    // Shameless copypasta from another project!
+    // https://github.com/miroslavpejic85/mirotalk/issues/145
+
+    const cursorX = e.clientX - rect.left;
+    const cursorY = e.clientY - rect.top;
+
+    const zoomDirection = e.deltaY > 0 ? 'zoom-out' : 'zoom-in';
+    const scaleFactor = zoomDirection === 'zoom-out' ? ZOOM_OUT_FACTOR : ZOOM_IN_FACTOR;
+
+    zoom *= scaleFactor;
+    zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
+
+    video.style.transformOrigin = `${cursorX}px ${cursorY}px`;
+    video.style.transform = `scale(${zoom})`;
+    // video.style.cursor = zoom === 1 ? 'pointer' : zoomDirection;
+
 }
 
 // =====================================================
